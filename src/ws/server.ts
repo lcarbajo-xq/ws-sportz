@@ -40,12 +40,15 @@ export function attachWebSocketServer<T extends Server>(server: T) {
   })
 
   const interval = setInterval(() => {
-    wss.clients.forEach((client) => {
+    for (const client of wss.clients) {
       const extClient = client as ExtendedWebSocket
-      if (extClient.isAlive === false) return extClient.terminate()
+      if (extClient.isAlive === false) {
+        extClient.terminate()
+        continue
+      }
       extClient.isAlive = false
       extClient.ping()
-    })
+    }
   }, 30000)
 
   wss.on('close', () => clearInterval(interval))
