@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import {
   createMatchSchema,
-  listMatchesQuerySchema
+  listMatchesQuerySchema,
+  MATCH_STATUS
 } from '../validation/matches.js'
 import { db } from '../db/db.js'
 import { matches } from '../db/schema.js'
@@ -16,7 +17,7 @@ matchsRouter.get('/', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({
       error: 'invalid query parameters',
-      details: JSON.stringify(parsed.error)
+      details: JSON.stringify(parsed.error.issues)
     })
   }
 
@@ -30,6 +31,7 @@ matchsRouter.get('/', async (req, res) => {
 
     res.status(200).json({ matches: data })
   } catch (error) {
+    console.error('Failed to fetch matches:', error)
     res.status(500).json({ error: 'Failed to fetch matches' })
   }
 })
@@ -38,9 +40,10 @@ matchsRouter.post('/', async (req, res) => {
   const parsed = createMatchSchema.safeParse(req.body)
 
   if (!parsed.success) {
-    return res
-      .status(400)
-      .json({ error: 'invalid payload', details: JSON.stringify(parsed.error) })
+    return res.status(400).json({
+      error: 'invalid payload',
+      details: JSON.stringify(parsed.error.issues)
+    })
   }
   const {
     data: { startTime, endTime, homeScore, awayScore }
@@ -54,12 +57,13 @@ matchsRouter.post('/', async (req, res) => {
         endTime: new Date(endTime),
         homeScore: homeScore ?? 0,
         awayScore: awayScore ?? 0,
-        status: getMatchStatus(startTime, endTime) ?? 'scheduled'
+        status: getMatchStatus(startTime, endTime) ?? MATCH_STATUS.SCHEDULED
       })
       .returning()
 
     res.status(201).json({ message: 'Match created', match: event })
   } catch (error) {
+    console.error('Failed to create match:', error)
     res.status(500).json({ error: 'Failed to create match' })
   }
 })
