@@ -14,8 +14,8 @@ const app = express()
 const server = http.createServer(app)
 
 app.use(cors())
-app.use(express.json())
 app.use(securityMiddleware())
+app.use(express.json())
 
 app.get('/', (_req, res) => {
   res.status(200).json({
