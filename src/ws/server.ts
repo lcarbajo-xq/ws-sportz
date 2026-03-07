@@ -2,6 +2,7 @@ import WebSocket from 'ws'
 import { WebSocketServer } from 'ws'
 import { Server } from 'http'
 import { Match } from '../db/schema.js'
+import { wsArcjet } from '../arcjet.js'
 
 interface ExtendedWebSocket extends WebSocket {
   isAlive: boolean
@@ -28,7 +29,26 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     maxPayload: 1024 * 1024
   })
 
-  wss.on('connection', (socket: ExtendedWebSocket) => {
+  wss.on('connection', async (socket: ExtendedWebSocket, request) => {
+    if (wsArcjet) {
+      try {
+        const decision = await wsArcjet.protect(request)
+
+        if (decision.isDenied()) {
+          const code = decision.reason.isRateLimit() ? 1013 : 1008
+          const reason = decision.reason.isRateLimit()
+            ? 'Rate limit exceeded'
+            : 'Access denied'
+          socket.close(code, reason)
+          return
+        }
+      } catch (error) {
+        console.error('Arcjet WebSocket error:', error)
+        socket.close(1011, 'Service unavailable')
+        return
+      }
+    }
+
     socket.isAlive = true
 
     socket.on('pong', () => {
