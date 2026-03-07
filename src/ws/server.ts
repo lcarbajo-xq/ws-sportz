@@ -29,10 +29,10 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     maxPayload: 1024 * 1024
   })
 
-  wss.on('connection', async (socket: ExtendedWebSocket) => {
+  wss.on('connection', async (socket: ExtendedWebSocket, request) => {
     if (wsArcjet) {
       try {
-        const decision = await wsArcjet.protect(socket)
+        const decision = await wsArcjet.protect(request)
 
         if (decision.isDenied()) {
           const code = decision.reason.isRateLimit() ? 1013 : 1003
