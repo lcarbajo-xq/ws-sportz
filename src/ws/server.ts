@@ -9,31 +9,31 @@ interface ExtendedWebSocket extends WebSocket {
   subscriptions?: Set<number>
 }
 
-const matchSubbscriptions = new Map<number, Set<ExtendedWebSocket>>()
+const matchSubscriptions = new Map<number, Set<ExtendedWebSocket>>()
 
 function subscribe(matchId: number, socket: ExtendedWebSocket) {
-  if (!matchSubbscriptions.has(matchId)) {
-    matchSubbscriptions.set(matchId, new Set())
+  if (!matchSubscriptions.has(matchId)) {
+    matchSubscriptions.set(matchId, new Set())
   }
 
-  matchSubbscriptions.get(matchId)!.add(socket)
+  matchSubscriptions.get(matchId)!.add(socket)
 }
 
-function unsuscribe(matchId: number, socket: ExtendedWebSocket) {
-  const subscribers = matchSubbscriptions.get(matchId)
+function unsubscribe(matchId: number, socket: ExtendedWebSocket) {
+  const subscribers = matchSubscriptions.get(matchId)
   if (!subscribers) return
 
   subscribers.delete(socket)
 
   if (subscribers.size === 0) {
-    matchSubbscriptions.delete(matchId)
+    matchSubscriptions.delete(matchId)
   }
 }
 
 function cleanSocketSubscriptions(socket: ExtendedWebSocket) {
   if (!socket.subscriptions) return
   for (const matchId of socket.subscriptions) {
-    unsuscribe(matchId, socket)
+    unsubscribe(matchId, socket)
   }
 }
 
@@ -59,7 +59,7 @@ function handleMessage(socket: ExtendedWebSocket, data: WebSocket.RawData) {
   }
 
   if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
-    unsuscribe(message.matchId, socket)
+    unsubscribe(message.matchId, socket)
     socket.subscriptions?.delete(message.matchId)
     sendJson(socket, { type: 'unsubscribed', matchId: message.matchId })
   }
@@ -75,7 +75,7 @@ function broadcastToAll(wss: WebSocketServer, payload: unknown) {
 }
 
 function broadcastToMatchSubscribers(matchId: number, payload: unknown) {
-  const subscribers = matchSubbscriptions.get(matchId)
+  const subscribers = matchSubscriptions.get(matchId)
   if (!subscribers || subscribers.size === 0) return
 
   const message = JSON.stringify(payload)
