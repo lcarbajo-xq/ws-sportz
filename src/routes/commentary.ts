@@ -103,7 +103,11 @@ commentaryRouter.post('/', async (req, res) => {
     res
       .status(201)
       .json({ message: 'Commentary created', commentary: newCommentary })
-  } catch (error) {
+  } catch (error: any) {
+    // Handle foreign key violation on matchId (e.g., match was deleted after check)
+    if (error.code === '23503' && error.constraint?.includes('match_id')) {
+      return res.status(404).json({ error: 'Match not found' })
+    }
     console.error('Failed to create commentary:', error)
     res.status(500).json({ error: 'Failed to create commentary' })
   }

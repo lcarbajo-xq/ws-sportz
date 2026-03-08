@@ -19,6 +19,7 @@ function subscribe(matchId: number, socket: ExtendedWebSocket) {
   }
 
   matchSubscriptions.get(matchId)!.add(socket)
+  socket.subscriptions?.add(matchId)
 }
 
 function unsubscribe(matchId: number, socket: ExtendedWebSocket) {
@@ -26,6 +27,7 @@ function unsubscribe(matchId: number, socket: ExtendedWebSocket) {
   if (!subscribers) return
 
   subscribers.delete(socket)
+  socket.subscriptions?.delete(matchId)
 
   if (subscribers.size === 0) {
     matchSubscriptions.delete(matchId)
@@ -81,14 +83,19 @@ async function handleMessage(
       })
       return
     }
+    if (socket.subscriptions?.has(message.matchId)) {
+      sendJson(socket, {
+        type: 'already_subscribed',
+        matchId: message.matchId
+      })
+      return
+    }
     subscribe(message.matchId, socket)
-    socket.subscriptions?.add(message.matchId)
     sendJson(socket, { type: 'subscribed', matchId: message.matchId })
   }
 
   if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
     unsubscribe(message.matchId, socket)
-    socket.subscriptions?.delete(message.matchId)
     sendJson(socket, { type: 'unsubscribed', matchId: message.matchId })
   }
 }
@@ -153,6 +160,7 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     socket.on('message', (data) => handleMessage(socket, data))
 
     socket.on('error', () => {
+      cleanSocketSubscriptions(socket)
       socket.terminate()
     })
 
