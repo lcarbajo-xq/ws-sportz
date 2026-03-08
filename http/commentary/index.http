@@ -7,7 +7,7 @@ GET http://localhost:3005/matches/1/commentary?limit=10
 
 ###
 ### Get commentary with maximum limit
-GET http://localhost:3005/matches/1/commentary?limit=50
+GET http://localhost:3005/matches/1/commentary
 
 ###
 ### Create a goal commentary
