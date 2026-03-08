@@ -1,0 +1,114 @@
+### Get all commentary for match 1 (default limit: 100)
+GET http://localhost:3005/matches/1/commentary
+
+###
+### Get commentary with custom limit
+GET http://localhost:3005/matches/1/commentary?limit=10
+
+###
+### Get commentary with maximum limit
+GET http://localhost:3005/matches/1/commentary
+
+###
+### Create a goal commentary
+POST http://localhost:3005/matches/1/commentary
+content-type: application/json
+
+{
+  "minute": 23,
+  "sequence": 1,
+  "period": "first_half",
+  "eventType": "goal",
+  "actor": "Cristiano Ronaldo",
+  "team": "Portugal",
+  "message": "¡GOOOL! Cristiano Ronaldo marca con un potente disparo de cabeza.",
+  "metadata": {
+    "assist": "Bruno Fernandes",
+    "goalType": "header",
+    "distance": "6 yards"
+  },
+  "tags": ["goal", "header", "corner-kick"]
+}
+
+###
+### Create a yellow card commentary
+POST http://localhost:3005/matches/1/commentary
+content-type: application/json
+
+{
+  "minute": 45,
+  "sequence": 2,
+  "period": "first_half",
+  "eventType": "yellow_card",
+  "actor": "Sergio Ramos",
+  "team": "Spain",
+  "message": "Tarjeta amarilla para Sergio Ramos por falta táctica.",
+  "metadata": {
+    "foulType": "tactical",
+    "location": "midfield"
+  },
+  "tags": ["yellow_card", "foul"]
+}
+
+###
+### Create a substitution commentary
+POST http://localhost:3005/matches/2/commentary
+content-type: application/json
+
+{
+  "minute": 67,
+  "sequence": 1,
+  "period": "second_half",
+  "eventType": "substitution",
+  "actor": "Kylian Mbappé",
+  "team": "France",
+  "message": "Cambio: Sale Kylian Mbappé, entra Ousmane Dembélé",
+  "metadata": {
+    "playerOut": "Kylian Mbappé",
+    "playerIn": "Ousmane Dembélé",
+    "reason": "tactical"
+  },
+  "tags": ["substitution"]
+}
+
+###
+### Create a simple match commentary
+POST http://localhost:3005/matches/1/commentary
+content-type: application/json
+
+{
+  "minute": 12,
+  "period": "first_half",
+  "message": "Buena jugada por la banda derecha, pero el centro es despejado por la defensa."
+}
+
+###
+### Create a penalty commentary
+POST http://localhost:3005/matches/1/commentary
+content-type: application/json
+
+{
+  "minute": 78,
+  "sequence": 3,
+  "period": "second_half",
+  "eventType": "penalty_goal",
+  "actor": "Lionel Messi",
+  "team": "Argentina",
+  "message": "¡GOL DE PENALTI! Messi no falla desde los 11 metros.",
+  "metadata": {
+    "penaltyReason": "handball",
+    "placement": "bottom_right"
+  },
+  "tags": ["goal", "penalty", "handball"]
+}
+
+###
+### Create a commentary with minimal data (only required fields)
+POST http://localhost:3005/matches/1/commentary
+content-type: application/json
+
+{
+  "minute": 0,
+  "period": "first_half",
+  "message": "¡Comienza el partido!"
+}

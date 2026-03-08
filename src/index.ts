@@ -6,6 +6,7 @@ import { attachWebSocketServer } from './ws/server.js'
 import dotenv from 'dotenv'
 import { matchsRouter } from './routes/matches.js'
 import { securityMiddleware } from './arcjet.js'
+import { commentaryRouter } from './routes/commentary.js'
 
 const PORT = Number(process.env.PORT || 3000)
 const HOST = process.env.HOST || '0.0.0.0'
@@ -25,9 +26,12 @@ app.get('/', (_req, res) => {
 })
 
 app.use('/matches', matchsRouter)
+app.use('/matches/:matchId/commentary', commentaryRouter)
 
-const { broadcastMatchCreated } = attachWebSocketServer(server)
+const { broadcastMatchCreated, broadcastMatchCommentary } =
+  attachWebSocketServer(server)
 app.locals.broadcastMatchCreated = broadcastMatchCreated
+app.locals.broadcastMatchCommentary = broadcastMatchCommentary
 
 server.listen(PORT, HOST, () => {
   const serverUrl =

@@ -1,11 +1,44 @@
 import WebSocket from 'ws'
 import { WebSocketServer } from 'ws'
 import { Server } from 'http'
-import { Match } from '../db/schema.js'
+import { Commentary, Match, matches } from '../db/schema.js'
 import { wsArcjet } from '../arcjet.js'
+import { db } from '../db/db.js'
+import { eq } from 'drizzle-orm'
 
 interface ExtendedWebSocket extends WebSocket {
-  isAlive: boolean
+  isAlive?: boolean
+  subscriptions?: Set<number>
+}
+
+const matchSubscriptions = new Map<number, Set<ExtendedWebSocket>>()
+
+function subscribe(matchId: number, socket: ExtendedWebSocket) {
+  if (!matchSubscriptions.has(matchId)) {
+    matchSubscriptions.set(matchId, new Set())
+  }
+
+  matchSubscriptions.get(matchId)!.add(socket)
+  socket.subscriptions?.add(matchId)
+}
+
+function unsubscribe(matchId: number, socket: ExtendedWebSocket) {
+  const subscribers = matchSubscriptions.get(matchId)
+  if (!subscribers) return
+
+  subscribers.delete(socket)
+  socket.subscriptions?.delete(matchId)
+
+  if (subscribers.size === 0) {
+    matchSubscriptions.delete(matchId)
+  }
+}
+
+function cleanSocketSubscriptions(socket: ExtendedWebSocket) {
+  if (!socket.subscriptions) return
+  for (const matchId of socket.subscriptions) {
+    unsubscribe(matchId, socket)
+  }
 }
 
 function sendJson(socket: WebSocket, payload: any) {
@@ -13,12 +46,87 @@ function sendJson(socket: WebSocket, payload: any) {
   socket.send(JSON.stringify(payload))
 }
 
-function broadcast(wss: WebSocketServer, payload: unknown) {
+async function matchExists(matchId: number): Promise<boolean> {
+  const result = await db
+    .select({ id: matches.id })
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1)
+  return result.length > 0
+}
+
+async function handleMessage(
+  socket: ExtendedWebSocket,
+  data: WebSocket.RawData
+) {
+  let message: any
+  try {
+    message = JSON.parse(data.toString())
+  } catch (error) {
+    console.error('Invalid JSON message:', data.toString())
+    sendJson(socket, { type: 'error', error: 'Invalid JSON format' })
+    return
+  }
+
+  if (message?.type === 'subscribe' && Number.isInteger(message.matchId)) {
+    let exists: boolean
+    try {
+      exists = await matchExists(message.matchId)
+    } catch (error) {
+      console.error('Failed to validate match existence:', error)
+      sendJson(socket, {
+        type: 'error',
+        error: 'Service unavailable'
+      })
+      return
+    }
+    // Race condition check: if match doesn't exist, send error. If it exists but client is already subscribed, send already_subscribed. Otherwise, subscribe the client.
+    if (socket.readyState !== WebSocket.OPEN || !socket.subscriptions) {
+      return
+    }
+    if (!exists) {
+      sendJson(socket, {
+        type: 'error',
+        error: 'Match not found',
+        matchId: message.matchId
+      })
+      return
+    }
+    if (socket.subscriptions?.has(message.matchId)) {
+      sendJson(socket, {
+        type: 'already_subscribed',
+        matchId: message.matchId
+      })
+      return
+    }
+    subscribe(message.matchId, socket)
+    sendJson(socket, { type: 'subscribed', matchId: message.matchId })
+  }
+
+  if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
+    unsubscribe(message.matchId, socket)
+    sendJson(socket, { type: 'unsubscribed', matchId: message.matchId })
+  }
+}
+
+function broadcastToAll(wss: WebSocketServer, payload: unknown) {
   const message = JSON.stringify(payload)
   for (const client of wss.clients) {
     if (client.readyState !== WebSocket.OPEN) continue
 
     client.send(message)
+  }
+}
+
+function broadcastToMatchSubscribers(matchId: number, payload: unknown) {
+  const subscribers = matchSubscriptions.get(matchId)
+  if (!subscribers || subscribers.size === 0) return
+
+  const message = JSON.stringify(payload)
+  for (const subscriber of subscribers) {
+    if (subscriber.readyState === WebSocket.OPEN) {
+      subscriber.send(message)
+    }
   }
 }
 
@@ -54,9 +162,20 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     socket.on('pong', () => {
       socket.isAlive = true
     })
+
+    socket.subscriptions = new Set()
     sendJson(socket, { type: 'welcome' })
 
-    socket.on('error', console.error)
+    socket.on('message', (data) => handleMessage(socket, data))
+
+    socket.on('error', () => {
+      cleanSocketSubscriptions(socket)
+      socket.terminate()
+    })
+
+    socket.on('close', () => {
+      cleanSocketSubscriptions(socket)
+    })
   })
 
   const interval = setInterval(() => {
@@ -71,8 +190,15 @@ export function attachWebSocketServer<T extends Server>(server: T) {
   wss.on('close', () => clearInterval(interval))
 
   function broadcastMatchCreated(match: Match) {
-    broadcast(wss, { type: 'match_created', data: match })
+    broadcastToAll(wss, { type: 'match_created', data: match })
   }
 
-  return { broadcastMatchCreated }
+  function broadcastMatchCommentary(matchId: number, commentary: Commentary) {
+    broadcastToMatchSubscribers(matchId, {
+      type: 'match_commentary',
+      data: commentary
+    })
+  }
+
+  return { broadcastMatchCreated, broadcastMatchCommentary }
 }
