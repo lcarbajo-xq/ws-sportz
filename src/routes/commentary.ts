@@ -35,6 +35,13 @@ commentaryRouter.get('/', async (req, res) => {
   const matchId = paramsParsed.data.matchId
 
   try {
+    const existingMatch = (
+      await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+    )[0]
+
+    if (!existingMatch) {
+      return res.status(404).json({ error: 'Match not found' })
+    }
     const data = await db
       .select()
       .from(commentary)

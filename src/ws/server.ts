@@ -87,15 +87,6 @@ async function handleMessage(
   }
 
   if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
-    const exists = await matchExists(message.matchId)
-    if (!exists) {
-      sendJson(socket, {
-        type: 'error',
-        error: 'Match not found',
-        matchId: message.matchId
-      })
-      return
-    }
     unsubscribe(message.matchId, socket)
     socket.subscriptions?.delete(message.matchId)
     sendJson(socket, { type: 'unsubscribed', matchId: message.matchId })
