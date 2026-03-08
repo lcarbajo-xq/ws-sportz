@@ -47,17 +47,12 @@ function sendJson(socket: WebSocket, payload: any) {
 }
 
 async function matchExists(matchId: number): Promise<boolean> {
-  try {
-    const result = await db
-      .select({ id: matches.id })
-      .from(matches)
-      .where(eq(matches.id, matchId))
-      .limit(1)
-    return result.length > 0
-  } catch (error) {
-    console.error('Error checking match existence:', error)
-    return false
-  }
+  const result = await db
+    .select({ id: matches.id })
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1)
+  return result.length > 0
 }
 
 async function handleMessage(
@@ -74,7 +69,21 @@ async function handleMessage(
   }
 
   if (message?.type === 'subscribe' && Number.isInteger(message.matchId)) {
-    const exists = await matchExists(message.matchId)
+    let exists: boolean
+    try {
+      exists = await matchExists(message.matchId)
+    } catch (error) {
+      console.error('Failed to validate match existence:', error)
+      sendJson(socket, {
+        type: 'error',
+        error: 'Service unavailable'
+      })
+      return
+    }
+    // Race condition check: if match doesn't exist, send error. If it exists but client is already subscribed, send already_subscribed. Otherwise, subscribe the client.
+    if (socket.readyState !== WebSocket.OPEN || !socket.subscriptions) {
+      return
+    }
     if (!exists) {
       sendJson(socket, {
         type: 'error',
