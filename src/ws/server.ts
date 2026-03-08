@@ -1,8 +1,10 @@
 import WebSocket from 'ws'
 import { WebSocketServer } from 'ws'
 import { Server } from 'http'
-import { Commentary, Match } from '../db/schema.js'
+import { Commentary, Match, matches } from '../db/schema.js'
 import { wsArcjet } from '../arcjet.js'
+import { db } from '../db/db.js'
+import { eq } from 'drizzle-orm'
 
 interface ExtendedWebSocket extends WebSocket {
   isAlive?: boolean
@@ -42,7 +44,24 @@ function sendJson(socket: WebSocket, payload: any) {
   socket.send(JSON.stringify(payload))
 }
 
-function handleMessage(socket: ExtendedWebSocket, data: WebSocket.RawData) {
+async function matchExists(matchId: number): Promise<boolean> {
+  try {
+    const result = await db
+      .select({ id: matches.id })
+      .from(matches)
+      .where(eq(matches.id, matchId))
+      .limit(1)
+    return result.length > 0
+  } catch (error) {
+    console.error('Error checking match existence:', error)
+    return false
+  }
+}
+
+async function handleMessage(
+  socket: ExtendedWebSocket,
+  data: WebSocket.RawData
+) {
   let message: any
   try {
     message = JSON.parse(data.toString())
@@ -53,12 +72,30 @@ function handleMessage(socket: ExtendedWebSocket, data: WebSocket.RawData) {
   }
 
   if (message?.type === 'subscribe' && Number.isInteger(message.matchId)) {
+    const exists = await matchExists(message.matchId)
+    if (!exists) {
+      sendJson(socket, {
+        type: 'error',
+        error: 'Match not found',
+        matchId: message.matchId
+      })
+      return
+    }
     subscribe(message.matchId, socket)
     socket.subscriptions?.add(message.matchId)
     sendJson(socket, { type: 'subscribed', matchId: message.matchId })
   }
 
   if (message?.type === 'unsubscribe' && Number.isInteger(message.matchId)) {
+    const exists = await matchExists(message.matchId)
+    if (!exists) {
+      sendJson(socket, {
+        type: 'error',
+        error: 'Match not found',
+        matchId: message.matchId
+      })
+      return
+    }
     unsubscribe(message.matchId, socket)
     socket.subscriptions?.delete(message.matchId)
     sendJson(socket, { type: 'unsubscribed', matchId: message.matchId })
