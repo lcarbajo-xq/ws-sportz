@@ -5,7 +5,7 @@ import {
   listCommentaryQuerySchema
 } from '../validation/commentary.js'
 import { db } from '../db/db.js'
-import { commentary } from '../db/schema.js'
+import { commentary, matches } from '../db/schema.js'
 import { eq, desc } from 'drizzle-orm'
 
 const MAX_LIMIT = 100
@@ -71,6 +71,14 @@ commentaryRouter.post('/', async (req, res) => {
   try {
     const { minute, ...restOfCommentary } = bodyParsed.data
     const matchId = paramsParsed.data.matchId
+
+    const existingMatch = (
+      await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+    )[0]
+
+    if (!existingMatch) {
+      return res.status(404).json({ error: 'Match not found' })
+    }
 
     const [newCommentary] = await db
       .insert(commentary)
