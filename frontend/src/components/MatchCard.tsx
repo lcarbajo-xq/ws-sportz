@@ -21,10 +21,9 @@ export function MatchCard({
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString(undefined, {
       hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+      minute: '2-digit'
     })
   }
 
@@ -81,6 +80,7 @@ export function MatchCard({
               Watching Live
             </span>
             <button
+              type='button'
               onClick={onCloseClick}
               className='px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors'>
               Close
@@ -88,6 +88,7 @@ export function MatchCard({
           </div>
         ) : (
           <button
+            type='button'
             onClick={handleWatchClick}
             className='px-4 py-1.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-medium hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
             disabled={isFinished || isLoading}>
