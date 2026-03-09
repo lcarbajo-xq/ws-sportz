@@ -31,6 +31,13 @@ export function Header({ connectionState }: HeaderProps) {
           bgColor: 'bg-red-500',
           dotColor: 'bg-red-300'
         }
+      default: {
+        return {
+          text: 'UNKNOWN',
+          bgColor: 'bg-gray-500',
+          dotColor: 'bg-gray-300'
+        }
+      }
     }
   }
 

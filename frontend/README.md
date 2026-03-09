@@ -20,7 +20,7 @@ Real-time match data visualization dashboard built with React, TypeScript, and T
 
 ## Project Structure
 
-```
+```text
 frontend/
 ├── src/
 │   ├── components/       # React components
@@ -38,7 +38,7 @@ frontend/
 │   ├── index.css        # Global styles with Tailwind
 │   └── main.tsx         # App entry point
 ├── .env                 # Environment variables
-├── tailwind.config.js   # Tailwind configuration
+├── tailwind.config.js   # Optional custom Tailwind configuration
 └── vite.config.ts       # Vite configuration
 ```
 
@@ -46,7 +46,7 @@ frontend/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+
 - pnpm (or npm/yarn)
 - Backend server running (see main README)
 
@@ -160,8 +160,8 @@ Manages WebSocket connection, match selection, commentary caching, and API calls
 ### Styles not loading
 
 - Run `pnpm install` to ensure Tailwind is installed
-- Check `tailwind.config.js` content paths include your files
-- Verify `@tailwind` directives are in `src/index.css`
+- If you use a custom `tailwind.config.js`, verify Vite is loading it
+- Verify `src/index.css` imports Tailwind with `@import "tailwindcss"
 
 ## License
 

@@ -7,7 +7,11 @@ import type {
 
 const WS_SERVER_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3005/ws'
 
-type WSConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error'
+export type WSConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'error'
 
 export type WS = {
   onMessage: (event: MessageEvent) => void
@@ -34,8 +38,33 @@ export class WebSocketClient {
     }
   }
 
+  private handleOpen() {
+    this.setConnectionState('connected')
+  }
+
+  private handleMessageEvent(event: MessageEvent) {
+    try {
+      const message = JSON.parse(event.data) as WSServerMessage
+      this.handleMessage(message)
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error)
+    }
+  }
+
+  private handleError(event: Event) {
+    console.error('WebSocket error:', event)
+    this.setConnectionState('error')
+  }
+
+  private handleClose() {
+    this.setConnectionState('disconnected')
+  }
+
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (
+      this.ws?.readyState === WebSocket.OPEN ||
+      this.ws?.readyState === WebSocket.CONNECTING
+    ) {
       return
     }
 
@@ -43,27 +72,13 @@ export class WebSocketClient {
     try {
       this.ws = new WebSocket(WS_SERVER_URL)
 
-      this.ws.addEventListener('open', () => {
-        this.setConnectionState('connected')
-      })
+      this.ws.addEventListener('open', this.handleOpen)
 
-      this.ws.addEventListener('message', (event) => {
-        try {
-          const message = JSON.parse(event.data) as WSServerMessage
-          this.handleMessage(message)
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
-        }
-      })
+      this.ws.addEventListener('message', this.handleMessageEvent)
 
-      this.ws.addEventListener('error', (event) => {
-        console.error('WebSocket error:', event)
-        this.setConnectionState('error')
-      })
+      this.ws.addEventListener('error', this.handleError)
 
-      this.ws.addEventListener('close', () => {
-        this.setConnectionState('disconnected')
-      })
+      this.ws.addEventListener('close', this.handleClose)
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       this.setConnectionState('error')
@@ -118,6 +133,10 @@ export class WebSocketClient {
 
   disconnect() {
     if (this.ws) {
+      this.ws.removeEventListener('open', this.handleOpen)
+      this.ws.removeEventListener('message', this.handleMessageEvent)
+      this.ws.removeEventListener('error', this.handleError)
+      this.ws.removeEventListener('close', this.handleClose)
       this.ws.close()
       this.ws = null
     }

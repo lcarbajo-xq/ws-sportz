@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Match } from '../types/domain'
 
 interface MatchCardProps {
@@ -13,6 +14,8 @@ export function MatchCard({
   onWatchClick,
   onCloseClick
 }: MatchCardProps) {
+  const [isLoading, setIsLoading] = useState(false)
+
   const isLive = match.status === 'live'
   const isFinished = match.status === 'finished'
 
@@ -23,6 +26,17 @@ export function MatchCard({
       minute: '2-digit',
       hour12: true
     })
+  }
+
+  const handleWatchClick = async () => {
+    setIsLoading(true)
+    try {
+      await onWatchClick()
+    } catch (error) {
+      console.error('Failed to watch match:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -74,9 +88,9 @@ export function MatchCard({
           </div>
         ) : (
           <button
-            onClick={onWatchClick}
+            onClick={handleWatchClick}
             className='px-4 py-1.5 bg-yellow-400 text-gray-900 rounded-lg text-sm font-medium hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            disabled={isFinished}>
+            disabled={isFinished || isLoading}>
             Watch Live
           </button>
         )}

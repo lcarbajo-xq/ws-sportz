@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Commentary, Match } from '../types/domain'
-import type { WSConnectionState } from '../lib/ws2'
 import { WebSocketClient } from '../lib/ws'
+import type { WSConnectionState } from '../lib/ws'
 import { api } from '../lib/api'
 
 export function useLiveMatch() {
