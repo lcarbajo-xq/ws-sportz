@@ -1,4 +1,4 @@
-import type { WSConnectionState } from '../lib/ws2'
+import type { WSConnectionState } from '../lib/ws'
 
 interface HeaderProps {
   connectionState: WSConnectionState
