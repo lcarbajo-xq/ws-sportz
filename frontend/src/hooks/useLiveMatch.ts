@@ -59,9 +59,11 @@ export function useLiveMatch() {
 
     try {
       const fetchedCommentaries = await api.getCommentaries(matchId)
+      if (selectedMatchIdRef.current !== matchId) return
       setCommentaries(fetchedCommentaries)
       commentaryCacheRef.current.set(matchId, fetchedCommentaries)
     } catch (err) {
+      if (selectedMatchIdRef.current !== matchId) return
       console.error('Failed to load commentaries for match', err)
       setError(err instanceof Error ? err.message : 'Failed to load commentary')
     }
