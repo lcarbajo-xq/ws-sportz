@@ -47,6 +47,7 @@ export function useLiveMatch() {
 
     setSelectedMatchId(matchId)
     selectedMatchIdRef.current = matchId
+    setError(null)
 
     const cachedCommentaries = commentaryCacheRef.current.get(matchId)
     if (cachedCommentaries) {
@@ -60,8 +61,14 @@ export function useLiveMatch() {
     try {
       const fetchedCommentaries = await api.getCommentaries(matchId)
       if (selectedMatchIdRef.current !== matchId) return
-      setCommentaries(fetchedCommentaries)
-      commentaryCacheRef.current.set(matchId, fetchedCommentaries)
+      const current = commentaryCacheRef.current.get(matchId) ?? []
+      const merged = Array.from(
+        new Map(
+          [...current, ...fetchedCommentaries].map((item) => [item.id, item])
+        ).values()
+      )
+      commentaryCacheRef.current.set(matchId, merged)
+      setCommentaries(merged)
     } catch (err) {
       if (selectedMatchIdRef.current !== matchId) return
       console.error('Failed to load commentaries for match', err)

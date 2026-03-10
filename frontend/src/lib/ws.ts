@@ -38,11 +38,11 @@ export class WebSocketClient {
     }
   }
 
-  private handleOpen() {
+  private handleOpen = () => {
     this.setConnectionState('connected')
   }
 
-  private handleMessageEvent(event: MessageEvent) {
+  private handleMessageEvent = (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data) as WSServerMessage
       this.handleMessage(message)
@@ -51,12 +51,12 @@ export class WebSocketClient {
     }
   }
 
-  private handleError(event: Event) {
+  private handleError = (event: Event) => {
     console.error('WebSocket error:', event)
     this.setConnectionState('error')
   }
 
-  private handleClose() {
+  private handleClose = () => {
     this.setConnectionState('disconnected')
   }
 
