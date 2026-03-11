@@ -1,6 +1,7 @@
 import { Match } from '../db/schema.js'
-import { MATCH_STATUS } from '../validation/matches.js'
+import { MATCH_STATUS, MatchStatus } from '../validation/matches.js'
 
+type MatchToUpdate = Pick<Match, 'id' | 'startTime' | 'status' | 'endTime'>
 export function getMatchStatus(
   startTime: string | Date,
   endTime: string | Date,
@@ -23,7 +24,10 @@ export function getMatchStatus(
   return MATCH_STATUS.LIVE
 }
 
-export async function syncMatchStatus(match: Match, updateStatus: unknown) {
+export async function syncMatchStatus(
+  match: MatchToUpdate,
+  updateStatus: (status: MatchStatus) => Promise<void>
+) {
   const nextStatus = getMatchStatus(match.startTime, match.endTime)
   if (!nextStatus) {
     return match.status

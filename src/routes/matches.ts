@@ -2,12 +2,15 @@ import { Router } from 'express'
 import {
   createMatchSchema,
   listMatchesQuerySchema,
-  MATCH_STATUS
+  MATCH_STATUS,
+  matchIdParamSchema,
+  MatchStatus,
+  updateScoreSchema
 } from '../validation/matches.js'
 import { db } from '../db/db.js'
 import { matches } from '../db/schema.js'
-import { getMatchStatus } from '../utils/get-match-status.js'
-import { desc } from 'drizzle-orm'
+import { getMatchStatus, syncMatchStatus } from '../utils/get-match-status.js'
+import { desc, eq } from 'drizzle-orm'
 const MAX_LIMIT = 60
 export const matchsRouter = Router()
 
@@ -16,7 +19,7 @@ matchsRouter.get('/', async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: 'invalid query parameters',
+      error: 'Invalid query parameters',
       details: JSON.stringify(parsed.error.issues)
     })
   }
@@ -41,7 +44,7 @@ matchsRouter.post('/', async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: 'invalid payload',
+      error: 'Invalid payload',
       details: JSON.stringify(parsed.error.issues)
     })
   }
@@ -63,10 +66,81 @@ matchsRouter.post('/', async (req, res) => {
     if (res.app.locals.broadcastMatchCreated) {
       res.app.locals.broadcastMatchCreated(event)
     }
-
+    console.log('Match created')
     res.status(201).json({ message: 'Match created', match: event })
   } catch (error) {
     console.error('Failed to create match:', error)
     res.status(500).json({ error: 'Failed to create match' })
+  }
+})
+
+matchsRouter.patch('/:id/score', async (req, res) => {
+  const paramsParsed = matchIdParamSchema.safeParse(req.params)
+
+  if (!paramsParsed.success) {
+    return res.status(400).json({
+      error: 'Invalid match id',
+      details: JSON.stringify(paramsParsed.error.issues)
+    })
+  }
+
+  const bodyParsed = updateScoreSchema.safeParse(req.body)
+
+  if (!bodyParsed.success) {
+    return res.status(400).json({
+      error: 'Invalid payload',
+      details: JSON.stringify(bodyParsed.error.issues)
+    })
+  }
+
+  const matchId = paramsParsed.data.id
+
+  try {
+    const [evistingMatch] = await db
+      .select({
+        id: matches.id,
+        status: matches.status,
+        startTime: matches.startTime,
+        endTime: matches.endTime
+      })
+      .from(matches)
+      .where(eq(matches.id, matchId))
+
+    if (!evistingMatch) {
+      return res.status(404).json({ error: 'Match not found' })
+    }
+
+    await syncMatchStatus(evistingMatch, async (nextStatus: MatchStatus) => {
+      await db
+        .update(matches)
+        .set({
+          status: nextStatus
+        })
+        .where(eq(matches.id, matchId))
+    })
+
+    if (evistingMatch.status !== MATCH_STATUS.LIVE) {
+      return res.status(409).json({ error: 'Match is not live' })
+    }
+
+    const [updatedMatch] = await db
+      .update(matches)
+      .set({
+        homeScore: bodyParsed.data.homeScore,
+        awayScore: bodyParsed.data.awayScore
+      })
+      .where(eq(matches.id, matchId))
+      .returning()
+
+    if (req.app.locals.broadcastScoreUpdated) {
+      req.app.locals.broadcastScoreUpdated(matchId, {
+        homeScore: updatedMatch.homeScore,
+        awayScore: updatedMatch.awayScore
+      })
+    }
+    res.json({ match: updatedMatch })
+  } catch (err) {
+    console.error('Failed to update match score:', err)
+    res.status(500).json({ error: 'Failed to update match score' })
   }
 })

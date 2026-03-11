@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Match } from '../db/schema.js'
 
 // List matches query schema
 export const listMatchesQuerySchema = z.object({
@@ -68,3 +69,6 @@ export type ListMatchesQuery = z.infer<typeof listMatchesQuerySchema>
 export type MatchIdParam = z.infer<typeof matchIdParamSchema>
 export type CreateMatch = z.infer<typeof createMatchSchema>
 export type UpdateScore = z.infer<typeof updateScoreSchema>
+type MatchStatusType = typeof MATCH_STATUS
+export type MatchStatus = MatchStatusType[keyof MatchStatusType]
+export type MatchScore = Pick<Match, 'homeScore' | 'awayScore'>

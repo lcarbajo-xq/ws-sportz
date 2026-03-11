@@ -28,10 +28,14 @@ app.get('/', (_req, res) => {
 app.use('/matches', matchsRouter)
 app.use('/matches/:matchId/commentary', commentaryRouter)
 
-const { broadcastMatchCreated, broadcastMatchCommentary } =
-  attachWebSocketServer(server)
+const {
+  broadcastMatchCreated,
+  broadcastMatchCommentary,
+  broadcastScoreUpdated
+} = attachWebSocketServer(server)
 app.locals.broadcastMatchCreated = broadcastMatchCreated
 app.locals.broadcastMatchCommentary = broadcastMatchCommentary
+app.locals.broadcastScoreUpdated = broadcastScoreUpdated
 
 server.listen(PORT, HOST, () => {
   const serverUrl =
