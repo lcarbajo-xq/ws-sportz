@@ -96,50 +96,54 @@ matchsRouter.patch('/:id/score', async (req, res) => {
   const matchId = paramsParsed.data.id
 
   try {
-    const [existingMatch] = await db
-      .select({
-        id: matches.id,
-        status: matches.status,
-        startTime: matches.startTime,
-        endTime: matches.endTime
-      })
-      .from(matches)
-      .where(eq(matches.id, matchId))
+    await db.transaction(async (tx) => {
+      const [existingMatch] = await db
+        .select({
+          id: matches.id,
+          status: matches.status,
+          startTime: matches.startTime,
+          endTime: matches.endTime
+        })
+        .from(matches)
+        .where(eq(matches.id, matchId))
 
-    if (!existingMatch) {
-      return res.status(404).json({ error: 'Match not found' })
-    }
-    let currentStatus = existingMatch.status
-    await syncMatchStatus(existingMatch, async (nextStatus: MatchStatus) => {
-      currentStatus = nextStatus
-      await db
+      if (!existingMatch) {
+        return res.status(404).json({ error: 'Match not found' })
+      }
+
+      const currentStatus = await syncMatchStatus(
+        existingMatch,
+        async (nextStatus: MatchStatus) => {
+          await tx
+            .update(matches)
+            .set({
+              status: nextStatus
+            })
+            .where(eq(matches.id, matchId))
+        }
+      )
+
+      if (currentStatus !== MATCH_STATUS.LIVE) {
+        return res.status(409).json({ error: 'Match is not live' })
+      }
+
+      const [updatedMatch] = await tx
         .update(matches)
         .set({
-          status: nextStatus
+          homeScore: bodyParsed.data.homeScore,
+          awayScore: bodyParsed.data.awayScore
         })
         .where(eq(matches.id, matchId))
+        .returning()
+
+      if (req.app.locals.broadcastScoreUpdated) {
+        req.app.locals.broadcastScoreUpdated(matchId, {
+          homeScore: updatedMatch.homeScore,
+          awayScore: updatedMatch.awayScore
+        })
+      }
+      res.json({ match: updatedMatch })
     })
-
-    if (currentStatus !== MATCH_STATUS.LIVE) {
-      return res.status(409).json({ error: 'Match is not live' })
-    }
-
-    const [updatedMatch] = await db
-      .update(matches)
-      .set({
-        homeScore: bodyParsed.data.homeScore,
-        awayScore: bodyParsed.data.awayScore
-      })
-      .where(eq(matches.id, matchId))
-      .returning()
-
-    if (req.app.locals.broadcastScoreUpdated) {
-      req.app.locals.broadcastScoreUpdated(matchId, {
-        homeScore: updatedMatch.homeScore,
-        awayScore: updatedMatch.awayScore
-      })
-    }
-    res.json({ match: updatedMatch })
   } catch (err) {
     console.error('Failed to update match score:', err)
     res.status(500).json({ error: 'Failed to update match score' })
