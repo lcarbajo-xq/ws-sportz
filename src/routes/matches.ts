@@ -8,7 +8,7 @@ import {
   updateScoreSchema
 } from '../validation/matches.js'
 import { db } from '../db/db.js'
-import { matches } from '../db/schema.js'
+import { Match, matches } from '../db/schema.js'
 import { getMatchStatus, syncMatchStatus } from '../utils/get-match-status.js'
 import { desc, eq } from 'drizzle-orm'
 const MAX_LIMIT = 60
@@ -109,8 +109,9 @@ matchsRouter.patch('/:id/score', async (req, res) => {
     if (!existingMatch) {
       return res.status(404).json({ error: 'Match not found' })
     }
-
+    let currentStatus = existingMatch.status
     await syncMatchStatus(existingMatch, async (nextStatus: MatchStatus) => {
+      currentStatus = nextStatus
       await db
         .update(matches)
         .set({
@@ -119,7 +120,7 @@ matchsRouter.patch('/:id/score', async (req, res) => {
         .where(eq(matches.id, matchId))
     })
 
-    if (existingMatch.status !== MATCH_STATUS.LIVE) {
+    if (currentStatus !== MATCH_STATUS.LIVE) {
       return res.status(409).json({ error: 'Match is not live' })
     }
 

@@ -5,5 +5,5 @@ dist
 drizzle
 data/
 .agents/
-.github/
+.github/prompts
 
