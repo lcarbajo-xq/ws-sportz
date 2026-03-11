@@ -1,0 +1,28 @@
+### Simulator status
+GET http://localhost:3005/simulator/status
+
+###
+### Start simulator with default config
+POST http://localhost:3005/simulator/start
+content-type: application/json
+
+{}
+
+###
+### Start simulator with custom config
+POST http://localhost:3005/simulator/start
+content-type: application/json
+
+{
+  "tickMs": 2500,
+  "createMatchProbability": 0.4,
+  "scoreUpdateProbability": 0.5,
+  "maxLiveMatches": 8
+}
+
+###
+### Stop simulator
+POST http://localhost:3005/simulator/stop
+content-type: application/json
+
+{}

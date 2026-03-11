@@ -96,7 +96,7 @@ matchsRouter.patch('/:id/score', async (req, res) => {
   const matchId = paramsParsed.data.id
 
   try {
-    const [evistingMatch] = await db
+    const [existingMatch] = await db
       .select({
         id: matches.id,
         status: matches.status,
@@ -106,11 +106,11 @@ matchsRouter.patch('/:id/score', async (req, res) => {
       .from(matches)
       .where(eq(matches.id, matchId))
 
-    if (!evistingMatch) {
+    if (!existingMatch) {
       return res.status(404).json({ error: 'Match not found' })
     }
 
-    await syncMatchStatus(evistingMatch, async (nextStatus: MatchStatus) => {
+    await syncMatchStatus(existingMatch, async (nextStatus: MatchStatus) => {
       await db
         .update(matches)
         .set({
@@ -119,7 +119,7 @@ matchsRouter.patch('/:id/score', async (req, res) => {
         .where(eq(matches.id, matchId))
     })
 
-    if (evistingMatch.status !== MATCH_STATUS.LIVE) {
+    if (existingMatch.status !== MATCH_STATUS.LIVE) {
       return res.status(409).json({ error: 'Match is not live' })
     }
 

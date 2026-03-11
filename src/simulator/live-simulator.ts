@@ -25,9 +25,18 @@ const DEFAULT_CONFIG: SimulatorConfig = {
 
 const SPORTS = ['football', 'basketball', 'cricket']
 const TEAMS = [
-  'Redwood United', 'Kingsport FC', 'Forest Rangers', 'Sunset Blazers',
-  'Granite Town', 'Seaside Albion', 'Iron Valley Titans', 'Crescent City Hoops',
-  'Capital Royals', 'Northbridge Athletic', 'Blue Harbor City', 'Metro Falcons'
+  'Redwood United',
+  'Kingsport FC',
+  'Forest Rangers',
+  'Sunset Blazers',
+  'Granite Town',
+  'Seaside Albion',
+  'Iron Valley Titans',
+  'Crescent City Hoops',
+  'Capital Royals',
+  'Northbridge Athletic',
+  'Blue Harbor City',
+  'Metro Falcons'
 ]
 
 function pickRandom<T>(list: T[]): T {
@@ -38,14 +47,25 @@ function clampProbability(value: number) {
   return Math.max(0, Math.min(1, value))
 }
 
-function buildCommentaryMessage(eventType: string, actor: string, team: string, opponent: string) {
+function buildCommentaryMessage(
+  eventType: string,
+  actor: string,
+  team: string,
+  opponent: string
+) {
   switch (eventType) {
-    case 'goal': return `${actor} scores for ${team}. ${opponent} will restart from kickoff.`
-    case 'save': return `${actor} makes a brilliant save to deny ${opponent}.`
-    case 'shot': return `${actor} takes a shot from distance. ${team} keeps the pressure on.`
-    case 'chance': return `${team} creates a dangerous chance inside the box.`
-    case 'pass': return `${actor} links play with a crisp pass for ${team}.`
-    default: return `${team} maintains possession and builds from the back.`
+    case 'goal':
+      return `${actor} scores for ${team}. ${opponent} will restart from kickoff.`
+    case 'save':
+      return `${actor} makes a brilliant save to deny ${opponent}.`
+    case 'shot':
+      return `${actor} takes a shot from distance. ${team} keeps the pressure on.`
+    case 'chance':
+      return `${team} creates a dangerous chance inside the box.`
+    case 'pass':
+      return `${actor} links play with a crisp pass for ${team}.`
+    default:
+      return `${team} maintains possession and builds from the back.`
   }
 }
 
@@ -58,21 +78,41 @@ class LiveMatchSimulator {
   private liveMatches = new Map<number, Match>()
   private sequenceByMatch = new Map<number, number>()
 
-  isRunning() { return this.timer !== null }
-
-  getStatus() {
-    return { running: this.isRunning(), config: this.config, liveMatchCount: this.liveMatches.size }
+  isRunning() {
+    return this.timer !== null
   }
 
-  start(configOverride: Partial<SimulatorConfig>, broadcasters: SimulatorBroadcasters) {
+  getStatus() {
+    return {
+      running: this.isRunning(),
+      config: this.config,
+      liveMatchCount: this.liveMatches.size
+    }
+  }
+
+  start(
+    configOverride: Partial<SimulatorConfig>,
+    broadcasters: SimulatorBroadcasters
+  ) {
     if (this.isRunning()) return false
     this.config = {
       tickMs: configOverride.tickMs ?? DEFAULT_CONFIG.tickMs,
-      createMatchProbability: clampProbability(configOverride.createMatchProbability ?? DEFAULT_CONFIG.createMatchProbability),
-      scoreUpdateProbability: clampProbability(configOverride.scoreUpdateProbability ?? DEFAULT_CONFIG.scoreUpdateProbability),
-      maxLiveMatches: Math.max(1, configOverride.maxLiveMatches ?? DEFAULT_CONFIG.maxLiveMatches)
+      createMatchProbability: clampProbability(
+        configOverride.createMatchProbability ??
+          DEFAULT_CONFIG.createMatchProbability
+      ),
+      scoreUpdateProbability: clampProbability(
+        configOverride.scoreUpdateProbability ??
+          DEFAULT_CONFIG.scoreUpdateProbability
+      ),
+      maxLiveMatches: Math.max(
+        1,
+        configOverride.maxLiveMatches ?? DEFAULT_CONFIG.maxLiveMatches
+      )
     }
-    this.timer = setInterval(() => { this.tick(broadcasters) }, this.config.tickMs)
+    this.timer = setInterval(() => {
+      this.tick(broadcasters)
+    }, this.config.tickMs)
     console.log('[simulator] started with config:', this.config)
     this.tick(broadcasters)
     return true
@@ -90,12 +130,17 @@ class LiveMatchSimulator {
 
   private tick(broadcasters: SimulatorBroadcasters) {
     try {
-      if (this.liveMatches.size < this.config.maxLiveMatches && Math.random() < this.config.createMatchProbability) {
+      if (
+        this.liveMatches.size < this.config.maxLiveMatches &&
+        Math.random() < this.config.createMatchProbability
+      ) {
         this.createLiveMatch(broadcasters)
       }
       if (this.liveMatches.size === 0) return
       const match = pickRandom(Array.from(this.liveMatches.values()))
-      console.log(`[simulator] tick match=${match.id} ${match.homeTeam} vs ${match.awayTeam} score=${match.homeScore}-${match.awayScore}`)
+      console.log(
+        `[simulator] tick match=${match.id} ${match.homeTeam} vs ${match.awayTeam} score=${match.homeScore}-${match.awayScore}`
+      )
       this.createCommentaryForMatch(match, broadcasters)
       this.maybeUpdateScore(match, broadcasters)
     } catch (error) {
@@ -106,19 +151,33 @@ class LiveMatchSimulator {
   private createLiveMatch(broadcasters: SimulatorBroadcasters) {
     const firstTeam = pickRandom(TEAMS)
     let secondTeam = pickRandom(TEAMS)
-    while (secondTeam === firstTeam) { secondTeam = pickRandom(TEAMS) }
+    while (secondTeam === firstTeam) {
+      secondTeam = pickRandom(TEAMS)
+    }
     const now = new Date()
     const createdMatch: Match = {
-      id: nextMatchId++, sport: pickRandom(SPORTS), homeTeam: firstTeam, awayTeam: secondTeam,
-      status: 'live', startTime: new Date(Date.now() - 60_000), endTime: new Date(Date.now() + 90 * 60_000),
-      homeScore: 0, awayScore: 0, createdAt: now
+      id: nextMatchId++,
+      sport: pickRandom(SPORTS),
+      homeTeam: firstTeam,
+      awayTeam: secondTeam,
+      status: 'live',
+      startTime: new Date(Date.now() - 60_000),
+      endTime: new Date(Date.now() + 90 * 60_000),
+      homeScore: 0,
+      awayScore: 0,
+      createdAt: now
     }
     this.liveMatches.set(createdMatch.id, createdMatch)
     broadcasters.broadcastMatchCreated?.(createdMatch)
-    console.log(`[simulator] match_created id=${createdMatch.id} ${createdMatch.homeTeam} vs ${createdMatch.awayTeam}`)
+    console.log(
+      `[simulator] match_created id=${createdMatch.id} ${createdMatch.homeTeam} vs ${createdMatch.awayTeam}`
+    )
   }
 
-  private createCommentaryForMatch(match: Match, broadcasters: SimulatorBroadcasters) {
+  private createCommentaryForMatch(
+    match: Match,
+    broadcasters: SimulatorBroadcasters
+  ) {
     const nextSequence = (this.sequenceByMatch.get(match.id) ?? 0) + 1
     this.sequenceByMatch.set(match.id, nextSequence)
     const eventType = pickRandom(['build_up', 'pass', 'shot', 'chance', 'save'])
@@ -127,13 +186,23 @@ class LiveMatchSimulator {
     const actor = `${pickRandom(['Alex', 'Jordan', 'Taylor', 'Casey', 'Sam'])} ${pickRandom(['Miller', 'Lopez', 'Garcia', 'Brown', 'Silva'])}`
     const minute = Math.min(90, Math.max(1, Math.floor(nextSequence / 2) + 1))
     const newCommentary: Commentary = {
-      id: nextCommentaryId++, matchId: match.id, minute, sequence: nextSequence,
-      period: minute <= 45 ? '1st' : '2nd', eventType, actor, team,
+      id: nextCommentaryId++,
+      matchId: match.id,
+      minute,
+      sequence: nextSequence,
+      period: minute <= 45 ? '1st' : '2nd',
+      eventType,
+      actor,
+      team,
       message: buildCommentaryMessage(eventType, actor, team, opponent),
-      tags: [eventType], metadata: null, createdAt: new Date()
+      tags: [eventType],
+      metadata: null,
+      createdAt: new Date()
     }
     broadcasters.broadcastMatchCommentary?.(match.id, newCommentary)
-    console.log(`[simulator] match_commentary matchId=${match.id} event=${eventType} seq=${nextSequence}`)
+    console.log(
+      `[simulator] match_commentary matchId=${match.id} event=${eventType} seq=${nextSequence}`
+    )
   }
 
   private maybeUpdateScore(match: Match, broadcasters: SimulatorBroadcasters) {
@@ -141,23 +210,44 @@ class LiveMatchSimulator {
     const homeScored = Math.random() > 0.5
     const nextHomeScore = homeScored ? match.homeScore + 1 : match.homeScore
     const nextAwayScore = homeScored ? match.awayScore : match.awayScore + 1
-    const updatedMatch: Match = { ...match, homeScore: nextHomeScore, awayScore: nextAwayScore }
+    const updatedMatch: Match = {
+      ...match,
+      homeScore: nextHomeScore,
+      awayScore: nextAwayScore
+    }
     this.liveMatches.set(match.id, updatedMatch)
-    broadcasters.broadcastScoreUpdated?.(match.id, { homeScore: nextHomeScore, awayScore: nextAwayScore })
-    console.log(`[simulator] score_updated matchId=${match.id} score=${nextHomeScore}-${nextAwayScore}`)
+    broadcasters.broadcastScoreUpdated?.(match.id, {
+      homeScore: nextHomeScore,
+      awayScore: nextAwayScore
+    })
+    console.log(
+      `[simulator] score_updated matchId=${match.id} score=${nextHomeScore}-${nextAwayScore}`
+    )
     const nextSequence = (this.sequenceByMatch.get(match.id) ?? 0) + 1
     this.sequenceByMatch.set(match.id, nextSequence)
     const scoringTeam = homeScored ? match.homeTeam : match.awayTeam
+    const minuteMatch = Math.min(
+      90,
+      Math.max(1, Math.floor(nextSequence / 2) + 1)
+    )
     const goalCommentary: Commentary = {
-      id: nextCommentaryId++, matchId: match.id,
-      minute: Math.min(90, Math.max(1, Math.floor(nextSequence / 2) + 1)),
-      sequence: nextSequence, period: '2nd', eventType: 'goal',
+      id: nextCommentaryId++,
+      matchId: match.id,
+      minute: minuteMatch,
+      sequence: nextSequence,
+      period: minuteMatch <= 45 ? '1st' : '2nd',
+      eventType: 'goal',
       actor: `${pickRandom(['Alex', 'Jordan', 'Taylor', 'Casey', 'Sam'])} ${pickRandom(['Miller', 'Lopez', 'Garcia', 'Brown', 'Silva'])}`,
-      team: scoringTeam, message: `GOAL! ${scoringTeam} increases the score to ${nextHomeScore}-${nextAwayScore}.`,
-      tags: ['goal', 'score_update'], metadata: null, createdAt: new Date()
+      team: scoringTeam,
+      message: `GOAL! ${scoringTeam} increases the score to ${nextHomeScore}-${nextAwayScore}.`,
+      tags: ['goal', 'score_update'],
+      metadata: null,
+      createdAt: new Date()
     }
     broadcasters.broadcastMatchCommentary?.(match.id, goalCommentary)
-    console.log(`[simulator] match_commentary matchId=${match.id} event=goal seq=${nextSequence}`)
+    console.log(
+      `[simulator] match_commentary matchId=${match.id} event=goal seq=${nextSequence}`
+    )
   }
 }
 

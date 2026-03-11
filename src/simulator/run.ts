@@ -56,19 +56,20 @@ server.listen(port, host, () => {
     host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`
   console.log(`[simulator-runner] HTTP/WS listening on ${url}`)
   console.log(`[simulator-runner] WS endpoint ${url.replace('http', 'ws')}/ws`)
+  liveMatchSimulator.start(config, {
+    broadcastMatchCreated,
+    broadcastMatchCommentary,
+    broadcastScoreUpdated
+  })
+  console.log('[simulator-runner] running in standalone mode')
 })
-
-liveMatchSimulator.start(config, {
-  broadcastMatchCreated,
-  broadcastMatchCommentary,
-  broadcastScoreUpdated
-})
-console.log('[simulator-runner] running in standalone mode')
 
 async function shutdown(signal: string) {
   console.log(`[simulator-runner] received ${signal}, shutting down...`)
   liveMatchSimulator.stop()
-  server.close()
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => (err ? reject(err) : resolve()))
+  })
   await pool.end()
   process.exit(0)
 }
