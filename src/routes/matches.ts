@@ -137,13 +137,6 @@ matchsRouter.patch('/:id/score', async (req, res) => {
         })
         .where(eq(matches.id, matchId))
         .returning()
-
-      if (req.app.locals.broadcastScoreUpdated) {
-        req.app.locals.broadcastScoreUpdated(matchId, {
-          homeScore: updatedMatch.homeScore,
-          awayScore: updatedMatch.awayScore
-        })
-      }
       // res.json({ match: updatedMatch })
       return { kind: 'ok' as const, match: updatedMatch }
     })
