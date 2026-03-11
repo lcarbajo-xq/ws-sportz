@@ -96,8 +96,8 @@ matchsRouter.patch('/:id/score', async (req, res) => {
   const matchId = paramsParsed.data.id
 
   try {
-    await db.transaction(async (tx) => {
-      const [existingMatch] = await db
+    const result = await db.transaction(async (tx) => {
+      const [existingMatch] = await tx
         .select({
           id: matches.id,
           status: matches.status,
@@ -108,7 +108,8 @@ matchsRouter.patch('/:id/score', async (req, res) => {
         .where(eq(matches.id, matchId))
 
       if (!existingMatch) {
-        return res.status(404).json({ error: 'Match not found' })
+        // res.status(404).json({ error: 'Match not found' })
+        return { kind: 'not_found' as const }
       }
 
       const currentStatus = await syncMatchStatus(
@@ -124,7 +125,8 @@ matchsRouter.patch('/:id/score', async (req, res) => {
       )
 
       if (currentStatus !== MATCH_STATUS.LIVE) {
-        return res.status(409).json({ error: 'Match is not live' })
+        // return res.status(409).json({ error: 'Match is not live' })
+        return { kind: 'not_live' as const }
       }
 
       const [updatedMatch] = await tx
@@ -142,8 +144,23 @@ matchsRouter.patch('/:id/score', async (req, res) => {
           awayScore: updatedMatch.awayScore
         })
       }
-      res.json({ match: updatedMatch })
+      // res.json({ match: updatedMatch })
+      return { kind: 'ok' as const, match: updatedMatch }
     })
+    if (result.kind === 'not_found') {
+      return res.status(404).json({ error: 'Match not found' })
+    }
+    if (result.kind === 'not_live') {
+      return res.status(409).json({ error: 'Match is not live' })
+    }
+
+    if (req.app.locals.broadcastScoreUpdated) {
+      req.app.locals.broadcastScoreUpdated(matchId, {
+        homeScore: result.match.homeScore,
+        awayScore: result.match.awayScore
+      })
+    }
+    return res.json({ match: result.match })
   } catch (err) {
     console.error('Failed to update match score:', err)
     res.status(500).json({ error: 'Failed to update match score' })
