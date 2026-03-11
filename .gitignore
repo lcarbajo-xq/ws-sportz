@@ -3,4 +3,7 @@
 node_modules
 dist
 drizzle
+data/
+.agents/
+.github/prompts
 

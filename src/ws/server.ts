@@ -5,6 +5,7 @@ import { Commentary, Match, matches } from '../db/schema.js'
 import { wsArcjet } from '../arcjet.js'
 import { db } from '../db/db.js'
 import { eq } from 'drizzle-orm'
+import { MatchScore } from '../validation/matches.js'
 
 interface ExtendedWebSocket extends WebSocket {
   isAlive?: boolean
@@ -200,5 +201,16 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     })
   }
 
-  return { broadcastMatchCreated, broadcastMatchCommentary }
+  function broadcastScoreUpdated(matchId: number, matchScore: MatchScore) {
+    broadcastToMatchSubscribers(matchId, {
+      type: 'score_updated',
+      data: matchScore
+    })
+  }
+
+  return {
+    broadcastMatchCreated,
+    broadcastMatchCommentary,
+    broadcastScoreUpdated
+  }
 }
