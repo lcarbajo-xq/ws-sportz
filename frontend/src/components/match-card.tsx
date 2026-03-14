@@ -52,11 +52,14 @@ export function MatchCard({
         setAwayScorePulse(false)
       }, 900)
     }
-    const animationTimeoutCurrent = pulseAnimationTimeoutRef.current
+
     actualScoreRef.current = { home: match.homeScore, away: match.awayScore }
+  }, [match.homeScore, match.awayScore])
+
+  useEffect(() => {
+    const animationTimeoutCurrent = pulseAnimationTimeoutRef.current
 
     return () => {
-      // const animationTimeoutCurrent = pulseAnimationTimeoutRef.current
       if (animationTimeoutCurrent.home) {
         clearTimeout(animationTimeoutCurrent.home)
       }
@@ -64,7 +67,7 @@ export function MatchCard({
         clearTimeout(animationTimeoutCurrent.away)
       }
     }
-  }, [match.homeScore, match.awayScore])
+  }, [])
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -82,7 +85,7 @@ export function MatchCard({
       return isWatching ? 'Viewing recap' : 'View recap'
     }
 
-    return isWatching ? 'Viewwing match' : 'View match'
+    return isWatching ? 'Viewing match' : 'View match'
   }
 
   const handleWatchClick = async () => {

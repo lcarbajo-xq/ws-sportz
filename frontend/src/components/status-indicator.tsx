@@ -1,4 +1,4 @@
-interface SatusIndicatorProps {
+interface StatusIndicatorProps {
   connectionState:
     | 'connected'
     | 'connecting'
@@ -7,7 +7,7 @@ interface SatusIndicatorProps {
     | 'reconnecting'
 }
 
-export function StatusIndicator({ connectionState }: SatusIndicatorProps) {
+export function StatusIndicator({ connectionState }: StatusIndicatorProps) {
   const getConnectionStatus = () => {
     switch (connectionState) {
       case 'connected':

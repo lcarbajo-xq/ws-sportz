@@ -89,7 +89,7 @@ export function LiveCommentaryPanel({
         </span>
       </div>
 
-      <div className='flex-1 overflow-y-aouto p-4 space-y-3'>
+      <div className='flex-1 overflow-y-auto p-4 space-y-3'>
         {isLoading ? (
           <div className='text-center py-8 text-gray-500'>
             Loading updates...
@@ -135,7 +135,7 @@ export function LiveCommentaryPanel({
 
                       {commentary.eventType && (
                         <span
-                          className={`px-2 py-0.5 bg-brand-yellow border border-black rounded-full font-semibold uppercase tracking-wide text-[10px] ${getEventBadgeColor(commentary.eventType)}`}>
+                          className={`px-2 py-0.5 border border-black rounded-full font-semibold uppercase tracking-wide text-[10px] ${getEventBadgeColor(commentary.eventType)}`}>
                           {commentary.eventType}
                         </span>
                       )}

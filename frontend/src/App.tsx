@@ -18,10 +18,11 @@ function App() {
     matches,
     selectedMatchId,
     selectMatch,
+    reloadMatches,
     deselectMatch
   } = useLiveMatch()
 
-  const totalPages = Math.max(1, Math.min(matches.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE))
 
   const pageMatches = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE
@@ -80,7 +81,7 @@ function App() {
                   server is online and accessible from your network.
                 </p>
                 <button
-                  onClick={() => {}}
+                  onClick={reloadMatches}
                   className='px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm transition-all shadow-md active:translate-y-0.5'>
                   Retry Connection
                 </button>
@@ -94,9 +95,9 @@ function App() {
             )}
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              {pageMatches.map((match, index) => (
+              {pageMatches.map((match) => (
                 <MatchCard
-                  key={`${match.id} ${index}`}
+                  key={match.id}
                   match={match}
                   isWatching={match.id === selectedMatchId}
                   onWatchClick={onWatchMatch(match.id)}

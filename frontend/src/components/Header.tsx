@@ -17,7 +17,11 @@ export function Header({ connectionState, errorMsg }: HeaderProps) {
           Live Scores & Real-Time Action
         </p>
       </div>
-      <div className='flex flex-col items-end gap-2'>
+      <div
+        className='flex flex-col items-end gap-2'
+        role='status'
+        aria-live='polite'
+        aria-atomic='true'>
         <StatusIndicator connectionState={connectionState} />
         {errorMsg && (
           <span className='text-xs font-mono bg-red-200 text-red-700 border border-red-200 px-2 py-1 rounded'>
