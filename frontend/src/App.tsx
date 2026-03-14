@@ -17,17 +17,19 @@ function App() {
     error,
     matches,
     selectedMatchId,
+    isLoadingCommentaries,
     selectMatch,
     reloadMatches,
     deselectMatch
   } = useLiveMatch()
 
   const totalPages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
 
   const pageMatches = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE
+    const startIndex = (safeCurrentPage - 1) * PAGE_SIZE
     return matches.slice(startIndex, startIndex + PAGE_SIZE)
-  }, [matches, currentPage])
+  }, [matches, safeCurrentPage])
 
   const onWatchMatch = (matchId: number) => async () => {
     await selectMatch(matchId)
@@ -109,28 +111,28 @@ function App() {
             {!loading && !error && matches.length > PAGE_SIZE && (
               <div className='flex flex-wrap items-center justify-between gap-3 pt-2'>
                 <span className='text-xs font-medium text-gray-500'>
-                  Page {currentPage} of {totalPages}
+                  Page {safeCurrentPage} of {totalPages}
                 </span>
                 <div className='flex items-center gap-2'>
                   <button
                     onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                      setCurrentPage(Math.max(1, safeCurrentPage - 1))
                     }
-                    disabled={currentPage === 1}
+                    disabled={safeCurrentPage === 1}
                     className={`
                       px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-black transition-all
-                      ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}
+                      ${safeCurrentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}
                     `}>
                     Prev
                   </button>
                   <button
                     onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={safeCurrentPage === totalPages}
                     className={`
                       px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-black transition-all
-                      ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}
+                      ${safeCurrentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50'}
                     `}>
                     Next
                   </button>
@@ -143,7 +145,7 @@ function App() {
             <LiveCommentaryPanel
               matchId={selectedMatchId}
               commentaries={commentaries}
-              isLoading={loading}
+              isLoading={isLoadingCommentaries}
             />
           </aside>
         </div>
