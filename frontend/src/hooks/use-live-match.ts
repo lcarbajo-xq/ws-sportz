@@ -130,6 +130,7 @@ export function useLiveMatch() {
     connectionState,
     selectMatch,
     deselectMatch,
+    reloadMatches: fetchMatches,
     loading,
     error
   }
