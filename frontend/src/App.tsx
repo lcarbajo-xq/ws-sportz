@@ -143,6 +143,7 @@ function App() {
             <LiveCommentaryPanel
               matchId={selectedMatchId}
               commentaries={commentaries}
+              isLoading={loading}
             />
           </aside>
         </div>
@@ -173,7 +174,7 @@ function App() {
                   <li>
                     Modify these in{' '}
                     <code className='bg-gray-100 px-1 rounded'>
-                      constants.ts
+                      consts/index.ts
                     </code>
                   </li>
                 </ul>
