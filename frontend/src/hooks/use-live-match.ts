@@ -11,6 +11,7 @@ export function useLiveMatch() {
   const [matches, setMatches] = useState<Match[]>([])
   const [commentaries, setCommentaries] = useState<Commentary[]>([])
   const [loading, setLoading] = useState(false)
+  const [isLoadingCommentaries, setIsLoadingCommentaries] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedMatchId, setSelectedMatchId] = useState<null | number>(null)
 
@@ -48,6 +49,7 @@ export function useLiveMatch() {
     setSelectedMatchId(matchId)
     selectedMatchIdRef.current = matchId
     setError(null)
+    setIsLoadingCommentaries(true)
 
     const cachedCommentaries = commentaryCacheRef.current.get(matchId)
     if (cachedCommentaries) {
@@ -73,6 +75,8 @@ export function useLiveMatch() {
       if (selectedMatchIdRef.current !== matchId) return
       console.error('Failed to load commentaries for match', err)
       setError(err instanceof Error ? err.message : 'Failed to load commentary')
+    } finally {
+      setIsLoadingCommentaries(false)
     }
   }, [])
 
@@ -130,6 +134,8 @@ export function useLiveMatch() {
     connectionState,
     selectMatch,
     deselectMatch,
+    reloadMatches: fetchMatches,
+    isLoadingCommentaries,
     loading,
     error
   }
