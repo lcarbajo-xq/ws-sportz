@@ -80,10 +80,8 @@ export class WebSocketClient {
       this.ws = null
     }
     this.setConnectionState(event.wasClean ? 'disconnected' : 'error')
-    this._reconnectTimeout = setTimeout(() => this.connect(), 3000)
 
     if (!this._intentionalClose) {
-      if (this._reconnectTimeout) clearTimeout(this._reconnectTimeout)
       const delay = Math.min(
         INITIAL_RECONNECT_DELAY * 2 ** this._reconnectionAttempts,
         MAX_RECONNECT_DELAY

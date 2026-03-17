@@ -153,7 +153,7 @@ export function useLiveMatch() {
         setMatches((prev) => [message.data, ...prev])
         const newMatchId = message.data.id
         if (!matchesAlreadyCreated.current.has(String(newMatchId))) {
-          setNewMatchesCount((prev) => (prev += 1))
+          setNewMatchesCount((prev) => prev + 1)
         }
 
         if (newMatchesCountTimeoutRef.current) {
@@ -176,14 +176,16 @@ export function useLiveMatch() {
   useEffect(() => {
     initiSocketConnection()
     return () => {
+      if (newMatchesCountTimeoutRef.current) {
+        clearTimeout(newMatchesCountTimeoutRef.current)
+        newMatchesCountTimeoutRef.current = null
+      }
       if (wsClientRef.current) {
         wsClientRef.current.disconnect()
         wsClientRef.current = null
       }
     }
   }, [])
-
-  useEffect(() => {}, [connectionState])
 
   useEffect(() => {
     fetchMatches()

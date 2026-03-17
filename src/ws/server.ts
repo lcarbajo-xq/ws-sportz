@@ -189,7 +189,6 @@ export function attachWebSocketServer<T extends Server>(server: T) {
 
     socket.on('close', () => {
       cleanSocketSubscriptions(socket)
-      socket.terminate()
     })
   })
 

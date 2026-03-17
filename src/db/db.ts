@@ -15,8 +15,8 @@ export const pool = new Pool({
   max: 1
 })
 
-pool.on('error', () => {
-  console.error('Idle client error:')
+pool.on('error', (err) => {
+  console.error('Idle client error:', err)
   // pg-pool ya maneja la reconexión automáticamente
   // pero puedes añadir logging o alertas aquí
 })
