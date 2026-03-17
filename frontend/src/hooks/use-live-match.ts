@@ -9,6 +9,7 @@ export function useLiveMatch() {
     useState<WSConnectionState>('disconnected')
 
   const [matches, setMatches] = useState<Match[]>([])
+  const [newMatchesCount, setNewMatchesCount] = useState(0)
   const [commentaries, setCommentaries] = useState<Commentary[]>([])
   const [loading, setLoading] = useState(false)
   const [isLoadingCommentaries, setIsLoadingCommentaries] = useState(false)
@@ -18,6 +19,11 @@ export function useLiveMatch() {
   const wsClientRef = useRef<WebSocketClient | null>(null)
   const commentaryCacheRef = useRef<Map<number, Commentary[]>>(new Map())
   const selectedMatchIdRef = useRef<number | null>(null)
+
+  const matchesAlreadyCreated = useRef(new Set<string>())
+  const newMatchesCountTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -29,6 +35,28 @@ export function useLiveMatch() {
       setLoading(true)
       setError(null)
       const fetchedMatches = await api.getMatches()
+      const matchesIDs = new Set(fetchedMatches.map((m) => String(m.id)))
+      if (matchesAlreadyCreated.current.size > 0) {
+        let newCount = 0
+        matchesIDs.forEach((matchId) => {
+          if (!matchesAlreadyCreated.current.has(matchId)) {
+            newCount += 1
+          }
+        })
+        if (newCount > 0) {
+          setNewMatchesCount((prev) => prev + newCount)
+        }
+
+        if (newMatchesCountTimeoutRef.current) {
+          clearTimeout(newMatchesCountTimeoutRef.current)
+        }
+        newMatchesCountTimeoutRef.current = setTimeout(() => {
+          setNewMatchesCount(0)
+          newMatchesCountTimeoutRef.current = null
+        }, 5000)
+      }
+
+      matchesAlreadyCreated.current = matchesIDs
       setMatches(fetchedMatches)
     } catch (err) {
       console.error('Failed to load matches')
@@ -89,10 +117,25 @@ export function useLiveMatch() {
     setCommentaries([])
   }, [])
 
-  // Create WebSocket client only once
-  useEffect(() => {
-    const wsClient = new WebSocketClient({
-      onConnectionChange: (state) => setConnectionState(state),
+  const dismissNewMatches = useCallback(() => {
+    if (newMatchesCountTimeoutRef.current) {
+      clearTimeout(newMatchesCountTimeoutRef.current)
+      newMatchesCountTimeoutRef.current = null
+    }
+    setNewMatchesCount(0)
+  }, [])
+
+  const initiSocketConnection = () => {
+    wsClientRef.current = new WebSocketClient({
+      onConnectionChange: (state) => {
+        setConnectionState(state)
+
+        if (state === 'connected') {
+          if (selectedMatchIdRef.current) {
+            wsClientRef.current?.subscribe(selectedMatchIdRef.current)
+          }
+        }
+      },
       onMatchCommentary: (message) => {
         const newCommentary = message.data
 
@@ -108,20 +151,39 @@ export function useLiveMatch() {
       },
       onMatchCreated: (message) => {
         setMatches((prev) => [message.data, ...prev])
+        const newMatchId = message.data.id
+        if (!matchesAlreadyCreated.current.has(String(newMatchId))) {
+          setNewMatchesCount((prev) => (prev += 1))
+        }
+
+        if (newMatchesCountTimeoutRef.current) {
+          clearTimeout(newMatchesCountTimeoutRef.current)
+        }
+        newMatchesCountTimeoutRef.current = setTimeout(() => {
+          setNewMatchesCount(0)
+          newMatchesCountTimeoutRef.current = null
+        }, 5000)
       },
-      onError: (errorMsg, matchId) => {
-        console.error('WebSocket error', errorMsg, matchId)
-        setError(errorMsg)
+      onError: (errorMsg) => {
+        console.error('WebSocket error on UseEffect', errorMsg)
       }
     })
 
-    wsClient.connect()
-    wsClientRef.current = wsClient
+    wsClientRef.current.initConnection()
+  }
 
+  // Create WebSocket client only once
+  useEffect(() => {
+    initiSocketConnection()
     return () => {
-      wsClient.disconnect()
+      if (wsClientRef.current) {
+        wsClientRef.current.disconnect()
+        wsClientRef.current = null
+      }
     }
   }, [])
+
+  useEffect(() => {}, [connectionState])
 
   useEffect(() => {
     fetchMatches()
@@ -132,8 +194,10 @@ export function useLiveMatch() {
     commentaries,
     selectedMatchId,
     connectionState,
+    newMatchesCount,
     selectMatch,
     deselectMatch,
+    dismissNewMatches,
     reloadMatches: fetchMatches,
     isLoadingCommentaries,
     loading,

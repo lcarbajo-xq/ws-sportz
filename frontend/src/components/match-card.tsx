@@ -40,7 +40,7 @@ export function MatchCard({
       }
       pulseAnimationTimeoutRef.current.home = setTimeout(() => {
         setHomeScorePulse(false)
-      }, 900)
+      }, 3000)
     }
 
     if (hasAwayScoreChanged) {
@@ -50,7 +50,7 @@ export function MatchCard({
       }
       pulseAnimationTimeoutRef.current.away = setTimeout(() => {
         setAwayScorePulse(false)
-      }, 900)
+      }, 3000)
     }
 
     actualScoreRef.current = { home: match.homeScore, away: match.awayScore }

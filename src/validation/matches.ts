@@ -71,4 +71,4 @@ export type CreateMatch = z.infer<typeof createMatchSchema>
 export type UpdateScore = z.infer<typeof updateScoreSchema>
 type MatchStatusType = typeof MATCH_STATUS
 export type MatchStatus = MatchStatusType[keyof MatchStatusType]
-export type MatchScore = Pick<Match, 'homeScore' | 'awayScore'>
+export type MatchScore = Pick<Match, 'id' | 'homeScore' | 'awayScore'>

@@ -148,11 +148,13 @@ matchsRouter.patch('/:id/score', async (req, res) => {
     }
 
     if (req.app.locals.broadcastScoreUpdated) {
-      req.app.locals.broadcastScoreUpdated(matchId, {
+      req.app.locals.broadcastScoreUpdated({
+        id: result.match.id,
         homeScore: result.match.homeScore,
         awayScore: result.match.awayScore
       })
     }
+    console.log('Match:', result.match)
     return res.json({ match: result.match })
   } catch (err) {
     console.error('Failed to update match score:', err)
