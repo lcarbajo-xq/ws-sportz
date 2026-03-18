@@ -198,10 +198,20 @@ export class WebSocketClient {
 
   disconnect() {
     this._intentionalClose = true
-    if (this._reconnectTimeout) clearTimeout(this._reconnectTimeout)
+    if (this._reconnectTimeout) {
+      clearTimeout(this._reconnectTimeout)
+      this._reconnectTimeout = null
+    }
 
-    if (this.ws) {
-      this.ws.close()
+    if (this.heartbeatTimeout) {
+      clearTimeout(this.heartbeatTimeout)
+      this.heartbeatTimeout = null
+    }
+
+    const socket = this.ws
+    if (socket) {
+      this.removeSocketListeners(socket)
+      socket.close()
       this.ws = null
     }
   }

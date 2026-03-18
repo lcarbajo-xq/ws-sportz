@@ -163,12 +163,12 @@ export function useLiveMatch() {
         )
       },
       onMatchCreated: (message) => {
-        // setMatches((prev) => [message.data, ...prev])
-        const newMatchId = message.data.id
-        if (!matchesAlreadyCreated.current.has(String(newMatchId))) {
-          setNewMatchesCount((prev) => prev + 1)
+        const newMatchId = String(message.data.id)
+        if (matchesAlreadyCreated.current.has(newMatchId)) {
+          return
         }
-        matchesAlreadyCreated.current.add(String(newMatchId))
+
+        matchesAlreadyCreated.current.add(newMatchId)
         setMatches((prev) =>
           prev.some((m) => m.id === message.data.id)
             ? prev
