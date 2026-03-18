@@ -149,12 +149,32 @@ export function useLiveMatch() {
           setCommentaries((prev) => [newCommentary, ...prev])
         }
       },
+      onScoreUpdated: (message) => {
+        setMatches((prev) =>
+          prev.map((m) =>
+            m.id === message.data.id
+              ? {
+                  ...m,
+                  homeScore: message.data.homeScore,
+                  awayScore: message.data.awayScore
+                }
+              : m
+          )
+        )
+      },
       onMatchCreated: (message) => {
-        setMatches((prev) => [message.data, ...prev])
+        // setMatches((prev) => [message.data, ...prev])
         const newMatchId = message.data.id
         if (!matchesAlreadyCreated.current.has(String(newMatchId))) {
           setNewMatchesCount((prev) => prev + 1)
         }
+        matchesAlreadyCreated.current.add(String(newMatchId))
+        setMatches((prev) =>
+          prev.some((m) => m.id === message.data.id)
+            ? prev
+            : [message.data, ...prev]
+        )
+        setNewMatchesCount((prev) => prev + 1)
 
         if (newMatchesCountTimeoutRef.current) {
           clearTimeout(newMatchesCountTimeoutRef.current)
