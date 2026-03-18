@@ -61,6 +61,7 @@ async function handleMessage(
   data: WebSocket.RawData
 ) {
   let message: any
+
   try {
     message = JSON.parse(data.toString())
   } catch (error) {
@@ -139,6 +140,18 @@ export function attachWebSocketServer<T extends Server>(server: T) {
   })
 
   wss.on('connection', async (socket: ExtendedWebSocket, request) => {
+    const pendingMessages: WebSocket.RawData[] = []
+    let ready: boolean = false
+
+    socket.on('message', (data) => {
+      if (!ready) {
+        pendingMessages.push(data)
+        return
+      }
+      handleMessage(socket, data)
+    })
+    socket.subscriptions = new Set()
+
     if (wsArcjet) {
       try {
         const decision = await wsArcjet.protect(request)
@@ -159,15 +172,15 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     }
 
     socket.isAlive = true
-
+    ready = true
+    for (const data of pendingMessages) {
+      handleMessage(socket, data)
+    }
     socket.on('pong', () => {
       socket.isAlive = true
     })
 
-    socket.subscriptions = new Set()
     sendJson(socket, { type: 'welcome' })
-
-    socket.on('message', (data) => handleMessage(socket, data))
 
     socket.on('error', () => {
       cleanSocketSubscriptions(socket)
@@ -201,8 +214,8 @@ export function attachWebSocketServer<T extends Server>(server: T) {
     })
   }
 
-  function broadcastScoreUpdated(matchId: number, matchScore: MatchScore) {
-    broadcastToMatchSubscribers(matchId, {
+  function broadcastScoreUpdated(matchScore: MatchScore) {
+    broadcastToAll(wss, {
       type: 'score_updated',
       data: matchScore
     })

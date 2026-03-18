@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Match } from '../types/domain'
+import { config } from '../consts'
 
 interface MatchCardProps {
   match: Match
@@ -7,6 +8,8 @@ interface MatchCardProps {
   onWatchClick: () => Promise<void>
   onCloseClick: () => void
 }
+
+const { SCORE_PULSE_DURATION_MS } = config
 
 export function MatchCard({
   match,
@@ -40,7 +43,7 @@ export function MatchCard({
       }
       pulseAnimationTimeoutRef.current.home = setTimeout(() => {
         setHomeScorePulse(false)
-      }, 900)
+      }, SCORE_PULSE_DURATION_MS)
     }
 
     if (hasAwayScoreChanged) {
@@ -50,7 +53,7 @@ export function MatchCard({
       }
       pulseAnimationTimeoutRef.current.away = setTimeout(() => {
         setAwayScorePulse(false)
-      }, 900)
+      }, SCORE_PULSE_DURATION_MS)
     }
 
     actualScoreRef.current = { home: match.homeScore, away: match.awayScore }

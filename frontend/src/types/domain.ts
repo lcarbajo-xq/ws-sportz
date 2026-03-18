@@ -40,6 +40,7 @@ export type WSMessageType =
   | 'already_subscribed'
   | 'match_created'
   | 'match_commentary'
+  | 'score_updated'
   | 'error'
 
 export interface WSBaseMessage {
@@ -76,6 +77,15 @@ export interface WSMatchCreatedMessage extends WSBaseMessage {
   data: Match
 }
 
+export interface WSMatchScoreUpdated extends WSBaseMessage {
+  type: 'score_updated'
+  data: {
+    id: number
+    homeScore: number
+    awayScore: number
+  }
+}
+
 export interface WSMatchCommentaryMessage extends WSBaseMessage {
   type: 'match_commentary'
   data: Commentary
@@ -99,5 +109,6 @@ export type WSServerMessage =
   | WSMatchCreatedMessage
   | WSMatchCommentaryMessage
   | WSErrorMessage
+  | WSMatchScoreUpdated
 
 export type WSClientMessage = WSSubscribeMessage | WSUnsubscribeMessage

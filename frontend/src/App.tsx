@@ -18,8 +18,10 @@ function App() {
     matches,
     selectedMatchId,
     isLoadingCommentaries,
+    newMatchesCount,
     selectMatch,
     reloadMatches,
+    dismissNewMatches,
     deselectMatch
   } = useLiveMatch()
 
@@ -50,6 +52,20 @@ function App() {
                 API: {loading ? '...' : matches.length}
               </span>
             </div>
+
+            {newMatchesCount > 0 && (
+              <div className='flex items-center justify-between gap-3 bg-brand-yellow border-2 border-black rounded-xl px-4 py-3 shadow-hard-sm animate-pulse'>
+                <span className='text-sm font-bold'>
+                  {newMatchesCount} new match{newMatchesCount > 1 ? 'es' : ''}{' '}
+                  added
+                </span>
+                <button
+                  onClick={dismissNewMatches}
+                  className='px-3 py-1 rounded-full text-xs font-bold border-2 border-black bg-white hover:bg-gray-50 transition-all'>
+                  Dismiss
+                </button>
+              </div>
+            )}
 
             {loading && (
               <div className='p-12 text-center border-2 border-dashed border-gray-300 rounded-2xl'>

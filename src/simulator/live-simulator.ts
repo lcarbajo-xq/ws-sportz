@@ -3,10 +3,15 @@ import type { Commentary, Match } from '../db/schema.js'
 type SimulatorBroadcasters = {
   broadcastMatchCreated?: (match: Match) => void
   broadcastMatchCommentary?: (matchId: number, entry: Commentary) => void
-  broadcastScoreUpdated?: (
-    matchId: number,
-    score: { homeScore: number; awayScore: number }
-  ) => void
+  broadcastScoreUpdated?: ({
+    id,
+    homeScore,
+    awayScore
+  }: {
+    id: number
+    homeScore: number
+    awayScore: number
+  }) => void
 }
 
 export type SimulatorConfig = {
@@ -216,7 +221,8 @@ class LiveMatchSimulator {
       awayScore: nextAwayScore
     }
     this.liveMatches.set(match.id, updatedMatch)
-    broadcasters.broadcastScoreUpdated?.(match.id, {
+    broadcasters.broadcastScoreUpdated?.({
+      id: match.id,
       homeScore: nextHomeScore,
       awayScore: nextAwayScore
     })
