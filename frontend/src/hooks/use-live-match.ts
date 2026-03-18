@@ -3,6 +3,9 @@ import type { Commentary, Match } from '../types/domain'
 import { WebSocketClient } from '../lib/ws'
 import type { WSConnectionState } from '../lib/ws'
 import { api } from '../lib/api'
+import { config } from '../consts'
+
+const { NEW_MATCHES_BANNER_TIMEOUT_MS } = config
 
 export function useLiveMatch() {
   const [connectionState, setConnectionState] =
@@ -53,7 +56,7 @@ export function useLiveMatch() {
         newMatchesCountTimeoutRef.current = setTimeout(() => {
           setNewMatchesCount(0)
           newMatchesCountTimeoutRef.current = null
-        }, 5000)
+        }, NEW_MATCHES_BANNER_TIMEOUT_MS)
       }
 
       matchesIDs.forEach((id) => matchesAlreadyCreated.current.add(id))
@@ -183,7 +186,7 @@ export function useLiveMatch() {
         newMatchesCountTimeoutRef.current = setTimeout(() => {
           setNewMatchesCount(0)
           newMatchesCountTimeoutRef.current = null
-        }, 5000)
+        }, NEW_MATCHES_BANNER_TIMEOUT_MS)
       },
       onError: (errorMsg) => {
         console.error('WebSocket error on UseEffect', errorMsg)
