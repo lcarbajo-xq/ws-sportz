@@ -56,7 +56,7 @@ export function useLiveMatch() {
         }, 5000)
       }
 
-      matchesAlreadyCreated.current = matchesIDs
+      matchesIDs.forEach((id) => matchesAlreadyCreated.current.add(id))
       setMatches(fetchedMatches)
     } catch (err) {
       console.error('Failed to load matches')
@@ -125,7 +125,8 @@ export function useLiveMatch() {
     setNewMatchesCount(0)
   }, [])
 
-  const initiSocketConnection = () => {
+  // Create WebSocket client only once
+  useEffect(() => {
     wsClientRef.current = new WebSocketClient({
       onConnectionChange: (state) => {
         setConnectionState(state)
@@ -190,11 +191,6 @@ export function useLiveMatch() {
     })
 
     wsClientRef.current.initConnection()
-  }
-
-  // Create WebSocket client only once
-  useEffect(() => {
-    initiSocketConnection()
     return () => {
       if (newMatchesCountTimeoutRef.current) {
         clearTimeout(newMatchesCountTimeoutRef.current)
