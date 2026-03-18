@@ -1,103 +1,151 @@
-# Sportz Frontend
+# Sportz — Frontend PoC
 
-Real-time match data visualization dashboard built with React, TypeScript, and Tailwind CSS.
+Dashboard en tiempo real para seguimiento de partidos en directo. Construido con React 19, TypeScript y Tailwind CSS v4. Consume la API REST del backend y mantiene una conexión WebSocket persistente con reconexión automática exponencial.
 
-## Features
+## Stack
 
-- 🔴 **Live Match Updates**: Real-time commentary via WebSocket
-- 📊 **Match Dashboard**: View all current matches with scores and status
-- 🎯 **Interactive UI**: Select matches to watch live commentary
-- 🔌 **Connection Status**: Visual indicator for WebSocket connection state
-- 📱 **Responsive Design**: Works on desktop and mobile devices
+- **Vite 7** — servidor de desarrollo y bundler
+- **React 19** — UI con hooks
+- **TypeScript** — tipado estricto end-to-end
+- **Tailwind CSS v4** — estilos con `@theme` custom tokens
+- **Native WebSocket API** — comunicación en tiempo real
 
-## Tech Stack
-
-- **Vite** - Fast build tool and development server
-- **React 19** - UI library with hooks
-- **TypeScript** - Type-safe code
-- **Tailwind CSS** - Utility-first styling
-- **Native WebSocket API** - Real-time communication
-
-## Project Structure
+## Estructura del proyecto
 
 ```text
-frontend/
-├── src/
-│   ├── components/       # React components
-│   │   ├── Header.tsx
-│   │   ├── MatchCard.tsx
-│   │   └── LiveCommentaryPanel.tsx
-│   ├── hooks/           # Custom React hooks
-│   │   └── useLiveMatch.ts
-│   ├── lib/             # Utilities and clients
-│   │   ├── api.ts       # REST API client
-│   │   └── ws.ts        # WebSocket client
-│   ├── types/           # TypeScript type definitions
-│   │   └── domain.ts
-│   ├── App.tsx          # Main app component
-│   ├── index.css        # Global styles with Tailwind
-│   └── main.tsx         # App entry point
-├── .env                 # Environment variables
-├── tailwind.config.js   # Optional custom Tailwind configuration
-└── vite.config.ts       # Vite configuration
+frontend/src/
+├── components/
+│   ├── Header.tsx                 # Indicador de estado de conexión WS
+│   ├── match-card.tsx             # Tarjeta de partido con marcador en vivo
+│   ├── live-commentary-pannel.tsx # Panel de comentarios en tiempo real
+│   └── status-indicator.tsx      # Dot de color según estado WS
+├── hooks/
+│   └── use-live-match.ts          # Hook principal: estado, WS, API
+├── lib/
+│   ├── api.ts                     # Cliente REST (fetch)
+│   └── ws.ts                      # WebSocketClient con reconexión exponencial
+├── types/
+│   └── domain.ts                  # Tipos compartidos (Match, Commentary, WS msgs)
+├── consts/
+│   └── index.ts                   # URLs base, timeouts, config de paginación
+├── App.tsx
+└── main.tsx
 ```
 
-## Getting Started
-
-### Prerequisites
+## Requisitos previos
 
 - Node.js 20.19+
-- pnpm (or npm/yarn)
-- Backend server running (see main README)
+- pnpm
+- Backend corriendo (ver [README del backend](../README.md))
 
-### Environment Variables
+## Setup local
 
-Create a `.env` file in the `frontend/` directory (or copy from `.env.example`):
+### 1. Instalar dependencias
 
 ```bash
+# Desde la carpeta frontend/
+pnpm install
+```
+
+### 2. Variables de entorno
+
+Crea un archivo `.env` en `frontend/`:
+
+```env
 VITE_API_BASE_URL=http://localhost:3005
 VITE_WS_URL=ws://localhost:3005/ws
 ```
 
-### Installation
+Si no existe el `.env`, el cliente usa esos mismos valores por defecto, así que la app funciona sin crearlo en local.
+
+### 3. Arrancar
 
 ```bash
-# Install dependencies
-pnpm install
-```
-
-### Development
-
-```bash
-# Start development server (with hot reload)
 pnpm dev
 ```
 
-The app will be available at `http://localhost:5173/`
+Aplicación disponible en `http://localhost:5173`.
 
-### Build
+## Cómo probar en local (paso a paso)
+
+### Setup recomendado para PoC
+
+Usa **dos terminales**:
+
+**Terminal 1 — Backend con simulador:**
 
 ```bash
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
+cd sportz          # raíz del proyecto
+pnpm simulator:dev
 ```
 
-## Usage
+Esto levanta el servidor Express + WebSocket en el puerto 3005 y arranca el simulador que genera eventos automáticos cada ~3 s.
 
-1. **Start the backend server** first (see main README)
-2. **Start the frontend**: `pnpm dev`
-3. **Open browser** at http://localhost:5173
-4. **View matches** in the left grid
-5. **Click "Watch Live"** on any match to see live commentary
-6. **Commentary updates** will appear in real-time in the right panel
-7. **Click "Close"** to stop watching a match
+**Terminal 2 — Frontend:**
 
-## API Integration
+```bash
+cd sportz/frontend
+pnpm dev
+```
 
-### REST Endpoints
+Abre `http://localhost:5173` en el navegador.
+
+### Flujo de prueba
+
+1. La app conecta automáticamente al WebSocket al montarse.
+2. El indicador de estado en el header pasa de **Connecting** → **Connected** (punto verde).
+3. Los partidos aparecen en el grid izquierdo, creados por el simulador.
+4. Haz click en **"Watch Live"** en cualquier tarjeta para suscribirte a ese partido.
+5. El panel derecho empieza a recibir comentarios en tiempo real (goles, tarjetas, etc.).
+6. El marcador en la tarjeta se actualiza con animación cada vez que hay un gol.
+7. Si el banner **"N new matches added"** aparece, haz click en **Dismiss** o espera 5 s.
+8. Para dejar de ver un partido, haz click en **"Close"** dentro del panel de comentarios.
+
+### Probar la reconexión automática
+
+1. Con el frontend corriendo y conectado (punto verde), para el backend (`Ctrl+C` en Terminal 1).
+2. El indicador pasa a **Error** o **Reconnecting**.
+3. Vuelve a arrancar el backend: el cliente reconecta automáticamente con backoff exponencial (1 s, 2 s, 4 s… hasta 30 s máximo).
+4. Al reconectar, el estado vuelve a **Connected** y puedes retomar las suscripciones.
+
+### Probar paginación
+
+El grid muestra 6 partidos por página. Si el simulador crea más de 6, aparecen los botones **Prev / Next**.
+
+## Scripts disponibles
+
+| Script         | Descripción                     |
+| -------------- | ------------------------------- |
+| `pnpm dev`     | Servidor de desarrollo con HMR  |
+| `pnpm build`   | Build de producción en `dist/`  |
+| `pnpm preview` | Preview del build de producción |
+| `pnpm lint`    | Linting con ESLint              |
+
+## Configuración del cliente WebSocket
+
+El cliente (`src/lib/ws.ts`) implementa:
+
+- Reconexión automática con **backoff exponencial** (inicio: 1 s, máximo: 30 s).
+- Detección de cierre limpio vs. inesperado vía `CloseEvent.wasClean` y código de cierre.
+- Guard anti-duplicado: no abre un socket nuevo si ya hay uno en `OPEN`, `CONNECTING` o `CLOSING`.
+- Limpieza de listeners siempre ligada al socket específico que los registró, para evitar listeners huérfanos.
+
+Parámetros ajustables en `src/consts/index.ts`:
+
+```ts
+INITIAL_RECONNECT_DELAY // 1000 ms por defecto
+MAX_RECONNECT_DELAY // 30 000 ms por defecto
+```
+
+---
+
+## Features futuras
+
+- **Persistencia en localStorage / IndexedDB** — guardar el historial de comentarios y el partido seleccionado para restaurar el estado al recargar la página sin peticiones adicionales al servidor.
+- **Suscripción a múltiples partidos simultáneos** — permitir abrir varios paneles de comentarios en paralelo, cada uno suscrito a un partido distinto, con layout configurable tipo grid o tabs.
+- **Picture-in-Picture para Live Commentary** — usar la [Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API) para mantener el marcador y el comentario en directo visibles en una ventana flotante al cambiar de pestaña o minimizar el navegador.
+- **Notificaciones push de goles** — integrar la [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) para enviar alertas del sistema cuando se produce un gol o un evento destacado en un partido suscrito, aunque la app esté en segundo plano.
+- **Reconexión con rehydratación de estado** — al reconectar tras un corte, solicitar el diferencial de eventos perdidos durante la desconexión y aplicarlos al estado local sin recargar la página completa.
 
 - `GET /matches?limit=50` - Fetch all matches
 - `GET /matches/:matchId/commentary?limit=100` - Fetch commentary for a match
